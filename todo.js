@@ -1,4 +1,4 @@
-module.exports = {create_csv, fileExists, add_username, add_sector, add_task, add_duedate, add_priority, create_record, input_id, to_csv, file_check}
+module.exports = {create_csv, fileExists, add_username, add_sector, add_task, add_duedate, add_priority, create_record, input_id, to_csv, is_record_overdue, file_check}
 
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const csv = require('csv-parser')
@@ -601,19 +601,24 @@ function anything_exists(selected_input, selected_column, csv_json){
 }
 
 async function to_csv(filteredData){
-    const keys = Object.keys(filteredData[0]);
-   
-    const csvHeader = keys.join(',');
-    const csvData = filteredData.map(obj =>
-        keys.map(key => obj[key]).join(',')
-    );
-    const csvString = csvHeader + '\n' + csvData.join('\n') + '\n';;
-   
     try{
-        await fs.writeFileSync(pth, csvString);
-    }
-    catch (err) {
-        console.log(err)
+        const keys = Object.keys(filteredData[0]);
+    
+        const csvHeader = keys.join(',');
+        const csvData = filteredData.map(obj =>
+            keys.map(key => obj[key]).join(',')
+        );
+        const csvString = csvHeader + '\n' + csvData.join('\n') + '\n';;
+    
+        try{
+            await fs.writeFileSync(pth, csvString);
+        }
+        catch (err) {
+            console.log(err)
+            return "Error Creating csv"
+        }
+    } catch (err){
+        return "improperly formatted json"
     }
 }
 
@@ -622,9 +627,6 @@ async function is_record_overdue(){
     var date_now = new Date().toISOString().split('T')[0];
     date_now = date_now.split("-").reverse().join("-");
 
-
-    console.log(date_now)
-   
     csv_json.forEach(record => {
         var due_date = record.TODO_DUE_DATE
         if (due_date < date_now){
@@ -633,8 +635,7 @@ async function is_record_overdue(){
         else {
             record.TODO_OVERDUE = "no";
         }
-   
+
         });
     await to_csv(csv_json);
-
 }

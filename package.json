@@ -15,6 +15,7 @@
     "convert-csv-to-json": "^2.47.0",
     "csv-parser": "^3.0.0",
     "csv-writer": "^1.6.0",
+    "expect": "^29.7.0",
     "figlet": "^1.7.0",
     "git": "^0.1.5",
     "json2csv": "^6.0.0-alpha.2",
