@@ -98,14 +98,6 @@ describe('create_record function', () => {
     });
 });
 
-describe("input_id function", () => {
-    it('Should Allow And Collect ID For Deletion Data And As Number', async () => {
-        prompts.inject([6])
-        const result = await todo_test.input_id();
-        assert.strictEqual(result, 6);
-        assert.strictEqual(typeof result, 'number');
-    });
-});
 
 describe("to_csv function", () => {
     it('Should Allow The Creation Of CSV Strings From A Structured JSON Format And Write To CSV', async () => {
@@ -372,6 +364,71 @@ describe("filter_equals function", () => {
         prompts.inject(["34666656564545656556565645"]);
         let result = await todo_test.filter_equals("USER_USERNAME", csv_json)
         assert.strictEqual(result, "No Records Such As That Exist");
+    });
+});
+
+describe("commit_edits function", () => {
+    it('Should Edit JSON As to be Saved Via CSV', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" },
+            {ID: "3", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const expected = [{ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+        {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+        {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'aaaaaaaaaaaaaaaaa', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" },
+        {ID: "3", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'aaaaaaaaaaaaaaaaa', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ]
+        
+        const csv_json = await csv_json_stub();
+        let result = await todo_test.commit_edits(csv_json, "USER_USERNAME", "john", "TODO_TASK", "aaaaaaaaaaaaaaaaa")
+        assert.deepEqual(result, expected)
+    });
+});
+
+describe("delete_record function", () => {
+    it('Should Delete Record From The Specified ID', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" },
+            {ID: "3", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ]);
+        const csv_json = await csv_json_stub();
+        let csv_json_length = csv_json.length
+        prompts.inject([3]);
+        let result = await todo_test.delete_record(csv_json)
+
+        const doesNotContainId3 = result.every(item => item.ID !== "3");
+        expect(doesNotContainId3).to.be.true;
+    });
+    it('Should tell the user the selected id is non existantß', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" },
+            {ID: "3", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ]);
+        const csv_json = await csv_json_stub();
+        let csv_json_length = csv_json.length
+        prompts.inject([3657567567567567567]);
+        let result = await todo_test.delete_record(csv_json)
+
+        assert.strictEqual(result, "No Records Such As That Exist");
+    });
+    it('Should tell the user when there are no records to delete', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" }
+        ]);
+        const csv_json = await csv_json_stub();
+        let result = await todo_test.delete_record(csv_json)
+        
+        assert.strictEqual(result, "No Records To Delete");
     });
 });
 

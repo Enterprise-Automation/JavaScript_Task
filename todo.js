@@ -1,4 +1,4 @@
-module.exports = {create_csv, fileExists, add_username, add_sector, add_task, add_duedate, add_priority, create_record, input_id, to_csv, is_record_overdue, anything_exists, view_all, filter_after, filter_before, filter_notequals, filter_equals,  file_check}
+module.exports = {create_csv, fileExists, add_username, add_sector, add_task, add_duedate, add_priority, create_record, to_csv, is_record_overdue, anything_exists, view_all, filter_after, filter_before, filter_notequals, filter_equals, edit_record, commit_edits, delete_record,  file_check}
 
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const csv = require('csv-parser')
@@ -166,41 +166,41 @@ async function create_record(data_to_add){
     });
 }
 
-async function delete_record() {
-    let csv_json = await to_json();
-    if (csv_json !== "Error Converting CSV To Json"){
+async function delete_record(csv_json) {
         if (csv_json.length > 1) {
-            let delete_by_id = await input_id()
+            
+            const my_prompt = await prompts({
+                type: 'number',
+                name: 'id',
+                message: 'Please Enter The ID Of The Record You Want Deleted',
+                validate: value => value === '' || value === 0 ? 'ID cannot be Null' : true
+            });
+
+            let delete_by_id = my_prompt.id
+
             let does_exist = await anything_exists(delete_by_id, "ID", csv_json)
+
             if (does_exist !== "No Records Such As That Exist"){
                 const filteredData = csv_json.filter(item => {
                     const itemID = item['ID']
                     return parseInt(itemID) !== delete_by_id;
                 });
                 await to_csv(filteredData);
+
+                return filteredData
             }
             else{
                 console.log(does_exist)
+                return does_exist
             }
         }
         else {
             console.log("No Records To Delete");
+            return "No Records To Delete"
         }
-    }
-    else{
-        console.log(csv_json)
-    }
 }
 
-async function input_id(){
-    const my_prompt = await prompts({
-        type: 'number',
-        name: 'id',
-        message: 'Please Enter The ID Of The Record You Want Deleted',
-        validate: value => value === '' || value === 0 ? 'ID cannot be Null' : true
-    });
-    return my_prompt.id;
-}
+
 
 
 async function edit_record() {
@@ -214,19 +214,8 @@ async function edit_record() {
                 let { cols_to_edit, edit_vals } = await edit_vars();
                 let idntcol = identcolumns;
                 let idntval = identvalues;
-
-                const edits = (csv_json, idntcol, idntval, cols_to_edit, edit_vals) => {
-                    for (let i = 0; i < csv_json.length; i++){
-                        if (csv_json[i][idntcol] == idntval){
-                            csv_json[i][cols_to_edit] = edit_vals;
-                            edited = true;
-                        }
-                    }
-                    return edited;
-                };
-               
-                const my_new_edit = await edits(csv_json, idntcol, idntval, cols_to_edit, edit_vals);
-                await to_csv(csv_json)
+                await commit_edits(csv_json, idntcol, idntval, cols_to_edit, edit_vals)
+                csv_json = await to_csv(csv_json)
             }
             else{
                 console.log(result)
@@ -240,7 +229,6 @@ async function edit_record() {
         console.log(csv_json)
     }
 }
-
 
 async function edit_idents(csv_json) {
     const identcolumn = await prompts({
@@ -304,6 +292,20 @@ async function edit_vars() {
         cols_to_edit: columns_to_edit.columnsedit,
         edit_vals: edit_val
     };
+}
+
+async function commit_edits(csv_json, idntcol, idntval, cols_to_edit, edit_vals){
+    const edits = (csv_json, idntcol, idntval, cols_to_edit, edit_vals) => {
+        for (let i = 0; i < csv_json.length; i++){
+            if (csv_json[i][idntcol] == idntval){
+                csv_json[i][cols_to_edit] = edit_vals;
+                edited = true;
+            }
+        }
+        return edited;
+    };
+    await edits(csv_json, idntcol, idntval, cols_to_edit, edit_vals);
+    return csv_json
 }
 
 async function filter_view(csv_json) {
