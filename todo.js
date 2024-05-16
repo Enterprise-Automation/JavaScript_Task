@@ -1,4 +1,4 @@
-module.exports = {create_csv, fileExists, add_username, add_sector, add_task, add_duedate, add_priority, create_record, input_id, to_csv, is_record_overdue, anything_exists, view_all, file_check}
+module.exports = {create_csv, fileExists, add_username, add_sector, add_task, add_duedate, add_priority, create_record, input_id, to_csv, is_record_overdue, anything_exists, view_all, filter_after, filter_before, filter_notequals, filter_equals,  file_check}
 
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const csv = require('csv-parser')
@@ -306,13 +306,12 @@ async function edit_vars() {
     };
 }
 
-async function filter_view() {
-    let csv_json = await to_json();
+async function filter_view(csv_json) {
     if (csv_json !== "Error Converting CSV To Json") {
         if (csv_json.length > 1){
             let { cols_to_filter, filter_choice, filter_type } = await filter_column();
             if (filter_type === "Basic"){
-                var filtered_json_data = await basic_filter(cols_to_filter, filter_choice)
+                var filtered_json_data = await basic_filter(cols_to_filter, filter_choice, csv_json)
                 if (filtered_json_data !== "No Records Such As That Exist"){
                     await view_all(filtered_json_data)
                 }
@@ -321,8 +320,8 @@ async function filter_view() {
                 }
             }
             else{
-                var filtered_json_data = await advanced_filter(cols_to_filter, filter_choice)
-                if (filtered_json_data !== "No Records Such As That Exist" || filtered_json_data !== "No Records Found Before Date" || filtered_json_data !== "No Records Found After Date"){
+                var filtered_json_data = await advanced_filter(cols_to_filter, filter_choice, csv_json)
+                if (filtered_json_data !== "No Records Such As That Exist" && filtered_json_data !== "No Records Found Before Date" && filtered_json_data !== "No Records Found After Date"){
                     await view_all(filtered_json_data)
                 }
                 else{
@@ -393,7 +392,8 @@ async function filter_column() {
     };
 }
 
-async function basic_filter(cols_to_filter, filter_choice){
+async function basic_filter(cols_to_filter, filter_choice, csv_json){
+    console.log("yes:",csv_json)
     const filter_oper = await prompts({
         type: 'select',
         name: 'filterOps',
@@ -403,11 +403,11 @@ async function basic_filter(cols_to_filter, filter_choice){
             { title: `You Want To View All Records Without Your Selected ${cols_to_filter}`, value: filter_notequals },
         ],
     });
-    var filtered_json = await filter_oper.filterOps(cols_to_filter);
+    var filtered_json = await filter_oper.filterOps(cols_to_filter, csv_json);
     return filtered_json
 }
 
-async function advanced_filter(cols_to_filter, filter_choice){
+async function advanced_filter(cols_to_filter, filter_choice, csv_json){
     const filter_oper = await prompts({
         type: 'select',
         name: 'filterOps',
@@ -419,18 +419,17 @@ async function advanced_filter(cols_to_filter, filter_choice){
             { title: `You Only Want To View Logs After ${cols_to_filter}`, value: filter_after },
         ],
     });
-    var filtered_json = await filter_oper.filterOps(cols_to_filter);
+    var filtered_json = await filter_oper.filterOps(cols_to_filter, csv_json);
     return filtered_json
 }
 
-async function filter_equals(cols_to_filter){
+async function filter_equals(cols_to_filter, csv_json){
     const my_filter_equals = await prompts({
         type: 'text',
         name: 'eqls',
         message: `Please Select A ${cols_to_filter} You Want To View`,
         validate: value => value.trim() === '' ? `${cols_to_filter} cannot be blank` : true
     });
-    let csv_json = await to_json();
     var filter_exist = await anything_exists(my_filter_equals.eqls, cols_to_filter, csv_json)
     if (filter_exist === true){
         var jsonFilter = csv_json.filter(item => item[cols_to_filter] === my_filter_equals.eqls)
@@ -442,14 +441,13 @@ async function filter_equals(cols_to_filter){
     }
 }
 
-async function filter_notequals(cols_to_filter){
+async function filter_notequals(cols_to_filter, csv_json){
     const my_filter_notequals = await prompts({
         type: 'text',
         name: 'noteqls',
         message: `Please Select A ${cols_to_filter} You Want To View`,
         validate: value => value.trim() === '' ? `${cols_to_filter} cannot be blank` : true
     });
-    let csv_json = await to_json();
     var filter_exist = await anything_exists(my_filter_notequals.noteqls, cols_to_filter, csv_json)
     if (filter_exist === true){
         var jsonFilter = csv_json.filter(item => item[cols_to_filter] !== my_filter_notequals.noteqls)
@@ -461,7 +459,7 @@ async function filter_notequals(cols_to_filter){
     }
 }
 
-async function filter_before(cols_to_filter) {
+async function filter_before(cols_to_filter, csv_json) {
     const my_filter_bfr = await prompts({
         type: 'date',
         name: 'bfr',
@@ -470,16 +468,15 @@ async function filter_before(cols_to_filter) {
         format: date => date.toISOString().slice(0, 10)
     });
 
-    let csv_json = await to_json();
     let date_filter_value = new Date(my_filter_bfr.bfr).toISOString().slice(0, 10);
 
     let new_filtered_data = csv_json.filter(item => {
-        const compdate = item[cols_to_filter];
+        let compdate = item[cols_to_filter];
+        compdate = compdate.split("-").reverse().join("-");
         return new Date(compdate) < new Date(date_filter_value);
     });
 
-    if (new_filtered_data.length !== "") {
-        console.log(new_filtered_data)
+    if (new_filtered_data.length !== 0) {
         return new_filtered_data;
     } else {
         return `No Records Found Before Date`;
@@ -487,7 +484,7 @@ async function filter_before(cols_to_filter) {
 }
 
 
-async function filter_after(cols_to_filter) {
+async function filter_after(cols_to_filter, csv_json) {
     const my_filter_aft = await prompts({
         type: 'date',
         name: 'aft',
@@ -496,15 +493,15 @@ async function filter_after(cols_to_filter) {
         format: date => date.toISOString().slice(0, 10)
     });
 
-    let csv_json = await to_json();
     let date_filter_value = new Date(my_filter_aft.aft).toISOString().slice(0, 10);
 
     let new_filtered_data = csv_json.filter(item => {
-        const compdate = item[cols_to_filter];
+        let compdate = item[cols_to_filter];
+        compdate = compdate.split("-").reverse().join("-");
         return new Date(compdate) > new Date(date_filter_value);
     });
-
-    if (new_filtered_data.length !== "") {
+    
+    if (new_filtered_data.length !== 0) {
         return new_filtered_data;
     } else {
         return `No Records Found After Date`;
@@ -513,7 +510,7 @@ async function filter_after(cols_to_filter) {
 
 
 async function view_all(csv_json) {
-        if (csv_json.length > 0){
+        if (csv_json.length > 1){
             csv_json.sort((a,b) => {
                 if (a.USER_USERNAME < b.USER_USERNAME) return - 1;
                 if (a.USER_USERNAME > b.USER_USERNAME) return 1;
@@ -534,9 +531,11 @@ async function view_all(csv_json) {
                 }
                 console.log(`${txtcol}TODO_ID: ${record.ID}\nUsername: ${record.USER_USERNAME}\n\nUser Sector: ${record.USER_SECTOR}\n\nToDo Task Body: ${record.TODO_TASK}\nToDo Creation Date: ${record.TODO_CREATION_DATE}\nToDo Due Date: ${record.TODO_DUE_DATE}\nToDo Priority: ${record.TODO_PRIORITY}\nToDo OverDue?: ${record.TODO_OVERDUE}\n--------------------------------------\x1b[0m\n`)
             });
+            return "met"
         }
         else{
             console.log("No Records To View");
+            return "No Records To View"
         }
 }
 

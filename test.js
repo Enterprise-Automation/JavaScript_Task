@@ -230,6 +230,151 @@ describe("Anything_Exists Function", () => {
     });
 });
 
+describe("view_all function", () => {
+    it('Should View All Records If Records Exist', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const csv_json = await csv_json_stub();
+        let result = await todo_test.view_all(csv_json)
+        console.log(result)
+        assert.strictEqual(result, "met");
+    });
+    it('Should View Indicate to the user if there are no records available to view', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+        ])
+        const csv_json = await csv_json_stub();
+        let result = await todo_test.view_all(csv_json)
+        assert.strictEqual(result, "No Records To View");
+    });
+});
+
+describe("filter_after function", () => {
+    it('Should View All Records If Records Exist', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const csv_json = await csv_json_stub();
+        const expected_out = {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" };
+        
+        prompts.inject(new Date('2020-10-10'));
+        let result = await todo_test.filter_after("TODO_DUE_DATE", csv_json)
+        expect(result).to.deep.include(expected_out);
+    });
+    it('Should Identify If no Records in Range', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const csv_json = await csv_json_stub();
+        
+        prompts.inject(new Date('9999-10-10'));
+        let result = await todo_test.filter_after("TODO_DUE_DATE", csv_json)
+        assert.strictEqual(result, "No Records Found After Date");
+    });
+});
+describe("filter_before function", () => {
+    it('Should View All Records If Records Exist Before 2006-10-10', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const csv_json = await csv_json_stub();
+        const expected_outs = {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes"}
+        
+        prompts.inject(new Date('2009-10-10'));
+        let result = await todo_test.filter_before("TODO_DUE_DATE", csv_json)
+        expect(result).to.deep.include(expected_outs);
+    });
+    it('Should Identify If no Records in Range', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const csv_json = await csv_json_stub();
+        
+        prompts.inject(new Date('1066-10-10'));
+        let result = await todo_test.filter_before("TODO_DUE_DATE", csv_json)
+        assert.strictEqual(result, "No Records Found Before Date");
+    });
+});
+
+describe("filter_notequals function", () => {
+    it('Should View All Records Without ID 1', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" },
+            {ID: "3", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const csv_json = await csv_json_stub();
+        const unexpected = {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" };
+        prompts.inject(["1"]);
+        let result = await todo_test.filter_notequals("ID", csv_json)
+        expect(result).to.not.deep.include(unexpected);
+    });
+    it('Should tell the user when a record does not exist to filter from', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" },
+            {ID: "3", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const csv_json = await csv_json_stub();
+
+        prompts.inject(["34545646asds"]);
+        let result = await todo_test.filter_notequals("ID", csv_json)
+        assert.strictEqual(result, "No Records Such As That Exist");
+    });
+});
+
+describe("filter_equals function", () => {
+    it('Should View All Records Without ID 1', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" },
+            {ID: "3", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const csv_json = await csv_json_stub();
+        const expected = {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" };
+        prompts.inject(["william"]);
+        let result = await todo_test.filter_equals("USER_USERNAME", csv_json)
+        expect(result).to.deep.include(expected);
+    });
+    it('Should tell the user when a record does not exist to filter from', async () => {
+        const { expect } = await import('chai');
+        const csv_json_stub = sinon.stub().resolves([ 
+            {ID: "0", USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_TASK: 'a', TODO_CREATION_DATE: 'a', TODO_DUE_DATE: 'a', TODO_PRIORITY: "a", TODO_OVERDUE: "a" },
+            {ID: "1", USER_USERNAME: 'william', USER_SECTOR: 'Devops', TODO_TASK: 'buy milk', TODO_CREATION_DATE: '11-11-2007', TODO_DUE_DATE: '11-11-2036', TODO_PRIORITY: "HIGH", TODO_OVERDUE: "no" },
+            {ID: "2", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" },
+            {ID: "3", USER_USERNAME: 'john', USER_SECTOR: 'IT', TODO_TASK: 'buy eggs', TODO_CREATION_DATE: '11-11-2005', TODO_DUE_DATE: '11-11-2008', TODO_PRIORITY: "LOW", TODO_OVERDUE: "yes" }
+        ])
+        const csv_json = await csv_json_stub();
+
+        prompts.inject(["34666656564545656556565645"]);
+        let result = await todo_test.filter_equals("USER_USERNAME", csv_json)
+        assert.strictEqual(result, "No Records Such As That Exist");
+    });
+});
+
 
 
 
