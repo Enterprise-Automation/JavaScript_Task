@@ -135,7 +135,7 @@ describe("to_csv function", () => {
             writeFileSyncStub.restore();
 
     });
-    it('Should Allow The Creation Of CSV Strings From A Structured JSON Format And Write To CSV', async () => {
+    it('Present An Error Where', async () => {
         const writeFileSyncStub = sinon.stub(fs, 'writeFileSync');
         const { expect } = await import('chai');
 
@@ -160,15 +160,77 @@ describe("to_csv function", () => {
             assert.strictEqual(error, "improperly formatted json");
             writeFileSyncStub.restore();
     });
-    describe("add_sector function", () => {
-        it('Should Allow And Collect Sector Data And As String', async () => {
-            prompts.inject(["Tesco"])
-            const result = await todo_test.add_sector();
-            assert.strictEqual(typeof result, 'string');
-            assert.strictEqual(result, 'Tesco');
-        });
+});
+describe("is_record_overdue function", () => {
+    it('Should Convert Column TODO_OERDUE TO NO IF TODO_DATE IS AHEAD OF TODAYS DATE AND TO YES IF SMALLER THAN TODAYS DATE', async () => {
+        const { expect } = await import('chai');
+        let dateone = "11-12-2027"
+        let datetwo = "12-11-2021"
+  
+        const csv_json_stub = sinon.stub().resolves([
+            {ID: 1, USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_DUE_DATE: dateone , TODO_OVERDUE: "no"},
+            {ID: 2, USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_DUE_DATE: datetwo, TODO_OVERDUE: "no"}
+        ]);
+        const csv_json = await csv_json_stub();
+        const result = await todo_test.is_record_overdue(csv_json);
+
+        expect(result).to.deep.equal([
+            {ID: 1, USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_DUE_DATE: dateone , TODO_OVERDUE: "no"},
+            {ID: 2, USER_USERNAME: 'a', USER_SECTOR: 'a', TODO_DUE_DATE: datetwo, TODO_OVERDUE: "yes"}
+        ])
     });
 });
+
+describe("Anything_Exists Function", () => {
+    it('Should Return True If Record Exists', async () => {
+        const csv_json_stub = sinon.stub().resolves([
+            {ID: "1", USER_USERNAME: 'john_doe', USER_SECTOR: 'IT', TODO_DUE_DATE: '2024-05-17', TODO_OVERDUE: "no"},
+            {ID: "2", USER_USERNAME: 'jane_smith', USER_SECTOR: 'Finance', TODO_DUE_DATE: '2024-05-18', TODO_OVERDUE: "no"},
+            {ID: "3", USER_USERNAME: 'emily_jones', USER_SECTOR: 'Marketing', TODO_DUE_DATE: '2024-05-19', TODO_OVERDUE: "yes"},
+            {ID: "4", USER_USERNAME: 'michael_clark', USER_SECTOR: 'Sales', TODO_DUE_DATE: '2024-05-20', TODO_OVERDUE: "yes"},
+            {ID: "5", USER_USERNAME: 'sarah_brown', USER_SECTOR: 'HR', TODO_DUE_DATE: '2024-05-21', TODO_OVERDUE: "no"},
+            {ID: "6", USER_USERNAME: 'david_wilson', USER_SECTOR: 'Operations', TODO_DUE_DATE: '2024-05-22', TODO_OVERDUE: "no"},
+            {ID: "7", USER_USERNAME: 'lisa_miller', USER_SECTOR: 'Customer Support', TODO_DUE_DATE: '2024-05-23', TODO_OVERDUE: "no"},
+            {ID: "8", USER_USERNAME: 'kevin_jackson', USER_SECTOR: 'Engineering', TODO_DUE_DATE: '2024-05-24', TODO_OVERDUE: "yes"}
+        ]);
+        const csv_json = await csv_json_stub();
+        let result = await todo_test.anything_exists("2","ID",csv_json)
+        assert.strictEqual(result, true);
+    });
+    it('Should Return An Error If Does Not Exist Record Exists', async () => {
+        const csv_json_stub = sinon.stub().resolves([
+            {ID: "1", USER_USERNAME: 'john_doe', USER_SECTOR: 'IT', TODO_DUE_DATE: '2024-05-17', TODO_OVERDUE: "no"},
+            {ID: "2", USER_USERNAME: 'jane_smith', USER_SECTOR: 'Finance', TODO_DUE_DATE: '2024-05-18', TODO_OVERDUE: "no"},
+            {ID: "3", USER_USERNAME: 'emily_jones', USER_SECTOR: 'Marketing', TODO_DUE_DATE: '2024-05-19', TODO_OVERDUE: "yes"},
+            {ID: "4", USER_USERNAME: 'michael_clark', USER_SECTOR: 'Sales', TODO_DUE_DATE: '2024-05-20', TODO_OVERDUE: "yes"},
+            {ID: "5", USER_USERNAME: 'sarah_brown', USER_SECTOR: 'HR', TODO_DUE_DATE: '2024-05-21', TODO_OVERDUE: "no"},
+            {ID: "6", USER_USERNAME: 'david_wilson', USER_SECTOR: 'Operations', TODO_DUE_DATE: '2024-05-22', TODO_OVERDUE: "no"},
+            {ID: "7", USER_USERNAME: 'lisa_miller', USER_SECTOR: 'Customer Support', TODO_DUE_DATE: '2024-05-23', TODO_OVERDUE: "no"},
+            {ID: "8", USER_USERNAME: 'kevin_jackson', USER_SECTOR: 'Engineering', TODO_DUE_DATE: '2024-05-24', TODO_OVERDUE: "yes"}
+        ]);
+        const csv_json = await csv_json_stub();
+        let result = await todo_test.anything_exists("5654","ID",csv_json)
+        assert.strictEqual(result, "No Records Such As That Exist");
+    });
+    it('Should Return An Error If User Tries To Edit An Existing Record But The Record Is The Default/Placeholder Record', async () => {
+        const csv_json_stub = sinon.stub().resolves([
+            {ID: "0", USER_USERNAME: 'def', USER_SECTOR: 'def', TODO_DUE_DATE: '2024-05-17', TODO_OVERDUE: "no"},
+            {ID: "1", USER_USERNAME: 'john_doe', USER_SECTOR: 'IT', TODO_DUE_DATE: '2024-05-17', TODO_OVERDUE: "no"},
+            {ID: "2", USER_USERNAME: 'jane_smith', USER_SECTOR: 'Finance', TODO_DUE_DATE: '2024-05-18', TODO_OVERDUE: "no"},
+            {ID: "3", USER_USERNAME: 'emily_jones', USER_SECTOR: 'Marketing', TODO_DUE_DATE: '2024-05-19', TODO_OVERDUE: "yes"},
+            {ID: "4", USER_USERNAME: 'michael_clark', USER_SECTOR: 'Sales', TODO_DUE_DATE: '2024-05-20', TODO_OVERDUE: "yes"},
+            {ID: "5", USER_USERNAME: 'sarah_brown', USER_SECTOR: 'HR', TODO_DUE_DATE: '2024-05-21', TODO_OVERDUE: "no"},
+            {ID: "6", USER_USERNAME: 'david_wilson', USER_SECTOR: 'Operations', TODO_DUE_DATE: '2024-05-22', TODO_OVERDUE: "no"},
+            {ID: "7", USER_USERNAME: 'lisa_miller', USER_SECTOR: 'Customer Support', TODO_DUE_DATE: '2024-05-23', TODO_OVERDUE: "no"},
+            {ID: "8", USER_USERNAME: 'kevin_jackson', USER_SECTOR: 'Engineering', TODO_DUE_DATE: '2024-05-24', TODO_OVERDUE: "yes"}
+        ]);
+        const csv_json = await csv_json_stub();
+        let result = await todo_test.anything_exists("0","ID",csv_json)
+        assert.strictEqual(result, "No Records Such As That Exist");
+    });
+});
+
+
 
 
 

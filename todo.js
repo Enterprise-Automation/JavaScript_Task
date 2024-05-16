@@ -1,4 +1,4 @@
-module.exports = {create_csv, fileExists, add_username, add_sector, add_task, add_duedate, add_priority, create_record, input_id, to_csv, is_record_overdue, file_check}
+module.exports = {create_csv, fileExists, add_username, add_sector, add_task, add_duedate, add_priority, create_record, input_id, to_csv, is_record_overdue, anything_exists, view_all, file_check}
 
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const csv = require('csv-parser')
@@ -59,17 +59,16 @@ function col(pth){
 }
 
 async function create_csv(){
-    const date_now = new Date().toISOString().split('T')[0];
     const records = [
         {id: 0, user_username: 'a', user_sector: 'a', todo_task: 'a', todo_creation_date: 'a', todo_due_date: 'a', todo_priority: "a", todo_overdue: "a" },
-        {id: 1, user_username: 'william22422', user_sector: 'Full Stack Development', todo_task: 'Something Bad', todo_creation_date: date_now, todo_due_date: '01-01-2077', todo_priority: "HIGH", todo_overdue: "no" },
-        {id: 2, user_username: 'thomas44244', user_sector: 'Devops Engineer', todo_task: 'Something Good', todo_creation_date: date_now, todo_due_date: '02-02-2077', todo_priority: "LOW", todo_overdue: "no" }
     ];
     await csvWriter.writeRecords(records)
 }
 
 async function menu() {
-    await is_record_overdue();
+    let csv_json = await to_json();
+    let updated_json = await is_record_overdue(csv_json);
+    await to_csv(updated_json)
     const response = await prompts({
         type: 'select',
         name: 'menuchoice',
@@ -83,7 +82,6 @@ async function menu() {
             { title: 'Exit Program', value: system_shutdown },
         ],
     });
-    let csv_json = await to_json();
     await response.menuchoice(csv_json); // Print the user's choice
 
     await menu();
@@ -140,8 +138,7 @@ async function add_duedate(){
         type: 'date',
         name: 'duedate',
         message: 'Please Enter Your ToDo Due Date',
-        format: date => date.toISOString().slice(0, 10),
-        validate: date => date < Date.now() ? 'Due Date Cannot Be Set Before Today' : true
+        format: date => date.toISOString().slice(0, 10)
     });
     console.log(my_prompt.duedate)
     return my_prompt.duedate;
@@ -622,20 +619,20 @@ async function to_csv(filteredData){
     }
 }
 
-async function is_record_overdue(){
-    let csv_json = await to_json();
-    var date_now = new Date().toISOString().split('T')[0];
-    date_now = date_now.split("-").reverse().join("-");
+async function is_record_overdue(csv_json){
+    var date_now = new Date()
 
     csv_json.forEach(record => {
-        var due_date = record.TODO_DUE_DATE
+        var due_date = record.TODO_DUE_DATE.split("-").reverse().join("-");
+        var due_date = new Date(due_date);
         if (due_date < date_now){
             record.TODO_OVERDUE = "yes";
         }
         else {
             record.TODO_OVERDUE = "no";
         }
-
-        });
-    await to_csv(csv_json);
+    });
+    return csv_json
 }
+
+
